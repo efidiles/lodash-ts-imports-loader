@@ -2,6 +2,7 @@ const ts = require('typescript');
 
 const LODASH_MODULE_NAME = 'lodash';
 const NEW_LINE = '\n';
+const RENAMED_MEMBER_SEPARATOR = ' as ';
 
 module.exports = function (source) {
 	this.cacheable();
@@ -10,6 +11,7 @@ module.exports = function (source) {
 	const sourceFile = ts.createSourceFile('source.ts', source, ts.ScriptTarget.ES2015, true);
 
 	ts.forEachChild(sourceFile, parseNode);
+
 	return output.trim();
 
 	function parseNode(node, depth) {
@@ -39,14 +41,27 @@ module.exports = function (source) {
 
 		const transpiledImports = importParts.importMembers.reduce(
 			(transpiledText, importMember) => {
-				transpiledText += `import ${importMember} = require('${modulePath}/${importMember}');`;
+				if (isRenamedMember(importMember)) {
+					const memberName = importMember.memberName;
+					const newName = importMember.memberNewName;
+
+					transpiledText += `import ${newName} = require('${modulePath}/${memberName}');`;
+				} else {
+					transpiledText += `import ${importMember} = require('${modulePath}/${importMember}');`;
+				}
+				
 				transpiledText += NEW_LINE;
+				
 				return transpiledText;
 			}
 			, ''
 		);
 
 		return transpiledImports;
+
+		function isRenamedMember(importMember) {
+			return !!importMember.memberName;
+		}
 	}
 
 	function parseImportNode(importNode) {
@@ -79,9 +94,38 @@ module.exports = function (source) {
 		}
 
 		const withoutCurlyBrackets = nodeText.replace('{', '').replace('}', '');
-		const allMembers = withoutCurlyBrackets.split(',');
-		const allTrimmedMembers = allMembers.map(s => s.trim());
-		return allTrimmedMembers;
+		const allRawMembers = withoutCurlyBrackets.split(',');
+		
+		const allParsedMembers = allRawMembers
+			.filter(clearEmptyValues)
+			.map(rawMemberText => {
+			const trimmedRawMemberText = rawMemberText.trim();
+			
+			if (isRenamedMember(rawMemberText)) {
+				return getRenamedMemberParts(rawMemberText)
+			}
+
+			return rawMemberText.trim();
+		});
+		
+		return allParsedMembers;
+
+		function clearEmptyValues(rawMemberText) {
+			return !!rawMemberText.trim().length;
+		}
+	}
+
+	function isRenamedMember(memberText) {
+		return memberText.indexOf(RENAMED_MEMBER_SEPARATOR) !== -1;
+	}
+
+	function getRenamedMemberParts(rawMemberText) {
+		const memberParts = rawMemberText.trim().split(RENAMED_MEMBER_SEPARATOR);
+
+		return {
+			memberName: memberParts[0].trim(),
+			memberNewName: memberParts[1].trim()
+		};
 	}
 
 	function isImportWithMembers(clauseText) {

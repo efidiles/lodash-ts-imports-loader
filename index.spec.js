@@ -129,3 +129,33 @@ it("should ignore importing for side-effects (import 'lodash')", test => {
 
 	test.equal(result, expectedOutput);
 });
+
+it("should allow renaming imported members", test => {
+	test.plan(1);
+
+	const input = `import {something as something2} from 'lodash';`;
+	const expectedOutput = `import something2 = require('lodash/something');`;
+
+	const result = loader(input);
+
+	test.equal(result, expectedOutput);
+});
+
+it("should allow renaming imported members on multilines", test => {
+	test.plan(1);
+
+	const input = `
+import {
+	something as something2,
+	something3 as something4,
+} from 'lodash';
+`.trim();
+	const expectedOutput = `
+import something2 = require('lodash/something');
+import something4 = require('lodash/something3');
+`.trim();
+
+	const result = loader(input);
+
+	test.equal(result, expectedOutput);
+});
