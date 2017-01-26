@@ -1,6 +1,6 @@
 {
   "name": "lodash-ts-imports-loader",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "Eduard Fidiles",
   "license": "MIT",
   "description": "Transpiles ES6 lodash imports into typescript imports to help with tree-shaking",
