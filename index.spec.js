@@ -32,10 +32,8 @@ it('should work with multiple import members', test => {
 	test.plan(1);
 
 	const input = `import {something, something2} from 'lodash'`;
-	const expectedOutput = `
-import something = require('lodash/something');
-import something2 = require('lodash/something2');
-`.trim();
+	const expectedOutput = `import something = require('lodash/something');
+import something2 = require('lodash/something2');`;
 
 	const result = loader(input);
 
@@ -46,14 +44,14 @@ it('should work with multiple imports', test => {
 	test.plan(1);
 
 	const input = `
-import {something} from 'lodash'
-import {something2, something3} from 'lodash'
-`.trim();
+import {something} from 'lodash';
+import {something2, something3} from 'lodash';
+`;
 	const expectedOutput = `
 import something = require('lodash/something');
 import something2 = require('lodash/something2');
 import something3 = require('lodash/something3');
-`.trim();
+`;
 
 	const result = loader(input);
 
@@ -66,11 +64,11 @@ it('it should not affect other imports than lodash', test => {
 	const input = `
 import {something} from 'lodash/something';
 import {something2} from 'otherModule';
-`.trim();
+`;
 	const expectedOutput = `
 import {something} from 'lodash/something';
 import {something2} from 'otherModule';
-`.trim();
+`;
 
 	const result = loader(input);
 
@@ -85,12 +83,13 @@ import {something} from 'lodash/something';
 import {something2} from 'otherModule';
 
 const test = 'somevalue';
-`.trim();
+`;
 	const expectedOutput = `
 import {something} from 'lodash/something';
 import {something2} from 'otherModule';
+
 const test = 'somevalue';
-`.trim();
+`;
 
 	const result = loader(input);
 
@@ -149,11 +148,28 @@ import {
 	something as something2,
 	something3 as something4,
 } from 'lodash';
-`.trim();
+`;
 	const expectedOutput = `
 import something2 = require('lodash/something');
 import something4 = require('lodash/something3');
-`.trim();
+`;
+
+	const result = loader(input);
+
+	test.equal(result, expectedOutput);
+});
+
+it("should preserve the newlines at the end of the file", test => {
+	test.plan(1);
+
+	const input = `
+import {something} from 'lodash';
+
+`;
+	const expectedOutput = `
+import something = require('lodash/something');
+
+`;
 
 	const result = loader(input);
 

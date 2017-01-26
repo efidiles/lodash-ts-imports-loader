@@ -5,28 +5,27 @@ const NEW_LINE = '\n';
 const RENAMED_MEMBER_SEPARATOR = ' as ';
 
 module.exports = function (source) {
+	let output = source;
+
 	this.cacheable();
-	let output = '';
 
 	const sourceFile = ts.createSourceFile('source.ts', source, ts.ScriptTarget.ES2015, true);
 
 	ts.forEachChild(sourceFile, parseNode);
 
-	return output.trim();
+	return output;
 
 	function parseNode(node, depth) {
-		let textToAppend = node.getText() + NEW_LINE;
-
 		if (node.kind === ts.SyntaxKind.ImportDeclaration) {
+			const importText = node.getText();
 			const importParts = parseImportNode(node);
 
 			if (isLodashModule(importParts)) {
 				let transpiledImportText = transpileToTypescriptSyntax(importParts);
-				textToAppend = transpiledImportText;
+
+				replaceInOutput(importText, transpiledImportText);
 			}
 		}
-
-		appendToOutput(textToAppend);
 	}
 
 	function isLodashModule(importParts) {
@@ -40,28 +39,36 @@ module.exports = function (source) {
 		const modulePath = importParts.modulePath;
 
 		const transpiledImports = importParts.importMembers.reduce(
-			(transpiledText, importMember) => {
-				if (isRenamedMember(importMember)) {
+			(transpiledText, importMember, memberIndex) => {
+				let transpiledImport = '';
+
+				if (isRenamedMemberObject(importMember)) {
 					const memberName = importMember.memberName;
 					const newName = importMember.memberNewName;
 
-					transpiledText += `import ${newName} = require('${modulePath}/${memberName}');`;
+					transpiledImport += `import ${newName} = require('${modulePath}/${memberName}');`;
 				} else {
-					transpiledText += `import ${importMember} = require('${modulePath}/${importMember}');`;
+					transpiledImport += `import ${importMember} = require('${modulePath}/${importMember}');`;
 				}
-				
-				transpiledText += NEW_LINE;
-				
-				return transpiledText;
+
+				if (memberIndex > 0) {
+					transpiledImport = prependNewLine(transpiledImport);
+				}
+
+				return transpiledText + transpiledImport;
 			}
 			, ''
 		);
 
 		return transpiledImports;
+	}
 
-		function isRenamedMember(importMember) {
-			return !!importMember.memberName;
-		}
+	function prependNewLine(transpiledImport) {
+		return NEW_LINE + transpiledImport;
+	}
+
+	function isRenamedMemberObject(importMember) {
+		return !!importMember.memberName;
 	}
 
 	function parseImportNode(importNode) {
@@ -95,19 +102,19 @@ module.exports = function (source) {
 
 		const withoutCurlyBrackets = nodeText.replace('{', '').replace('}', '');
 		const allRawMembers = withoutCurlyBrackets.split(',');
-		
+
 		const allParsedMembers = allRawMembers
 			.filter(clearEmptyValues)
 			.map(rawMemberText => {
 			const trimmedRawMemberText = rawMemberText.trim();
-			
+
 			if (isRenamedMember(rawMemberText)) {
 				return getRenamedMemberParts(rawMemberText)
 			}
 
 			return rawMemberText.trim();
 		});
-		
+
 		return allParsedMembers;
 
 		function clearEmptyValues(rawMemberText) {
@@ -132,7 +139,7 @@ module.exports = function (source) {
 		return clauseText.indexOf('{') === 0;
 	}
 
-	function appendToOutput(newText) {
-		output += newText;
+	function replaceInOutput(toReplace, replacement) {
+		output = output.replace(toReplace, replacement);
 	}
 };
