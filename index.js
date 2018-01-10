@@ -1,6 +1,7 @@
 const ts = require('typescript');
 
 const LODASH_MODULE_NAME = 'lodash';
+const LODASH_FP_MODULE_NAME = 'lodash/fp';
 const NEW_LINE = '\n';
 const RENAMED_MEMBER_SEPARATOR = ' as ';
 
@@ -29,7 +30,10 @@ module.exports = function (source) {
 	}
 
 	function isLodashModule(importParts) {
-		const isRootLodashPackagePath = importParts.modulePath === LODASH_MODULE_NAME;
+		const isRootLodashPackagePath =
+			importParts.modulePath === LODASH_MODULE_NAME ||
+			importParts.modulePath === LODASH_FP_MODULE_NAME;
+
 		const hasImportMembers = importParts.importMembers && importParts.importMembers.length > 0;
 
 		return isRootLodashPackagePath && hasImportMembers;
