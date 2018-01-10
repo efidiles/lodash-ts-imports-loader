@@ -160,16 +160,27 @@ import something4 = require('lodash/something3');
 });
 
 it("should preserve the newlines at the end of the file", test => {
-	test.plan(1);
+    test.plan(1);
 
 	const input = `
-import {something} from 'lodash';
-
-`;
+	import {something} from 'lodash';
+	
+	`;
 	const expectedOutput = `
-import something = require('lodash/something');
+	import something = require('lodash/something');
+	
+	`;
 
-`;
+	const result = loader(input);
+
+	test.equal(result, expectedOutput);
+});
+
+it("should work with lodash/fp", test => {
+    test.plan(1);
+
+	const input = `import {something} from 'lodash/fp';`;
+	const expectedOutput = `import something = require('lodash/fp/something');`;
 
 	const result = loader(input);
 
